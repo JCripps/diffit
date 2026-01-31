@@ -6,52 +6,70 @@
   }
 
   let { additions, deletions, modified = 0 }: Props = $props();
+
+  let totalChanges = $derived(additions + deletions + modified);
+  let summaryText = $derived(
+    totalChanges === 0
+      ? 'No differences'
+      : `${totalChanges} change${totalChanges !== 1 ? 's' : ''}`
+  );
 </script>
 
-<footer
-  class="flex items-center gap-4 pt-4 border-t text-sm font-medium"
-  style="border-color: var(--no-border);"
->
-  <div class="stat-item stat-additions">
-    <span class="stat-indicator"></span>
-    <span>+{additions} addition{additions !== 1 ? 's' : ''}</span>
+<footer class="status-bar">
+  <div class="stats-group">
+    <span class="stat stat-additions" title="{additions} addition{additions !== 1 ? 's' : ''}">
+      +{additions}
+    </span>
+    <span class="stat stat-deletions" title="{deletions} deletion{deletions !== 1 ? 's' : ''}">
+      -{deletions}
+    </span>
+    {#if modified > 0}
+      <span class="stat stat-modified" title="{modified} modified">
+        ~{modified}
+      </span>
+    {/if}
   </div>
 
-  <div class="stat-item stat-deletions">
-    <span class="stat-indicator"></span>
-    <span>-{deletions} deletion{deletions !== 1 ? 's' : ''}</span>
-  </div>
-
-  {#if modified > 0}
-    <div class="stat-item stat-modified">
-      <span class="stat-indicator"></span>
-      <span>~{modified} modified</span>
-    </div>
-  {/if}
+  <span class="summary-text">{summaryText}</span>
 </footer>
 
 <style>
-  .stat-item {
+  .status-bar {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.25rem;
-    background-color: var(--no-bg-secondary);
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--no-border-subtle);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
   }
 
-  .stat-indicator {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
+  .stats-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
-  .stat-additions { color: var(--no-diff-add); }
-  .stat-additions .stat-indicator { background-color: var(--no-diff-add); }
+  .stat {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
 
-  .stat-deletions { color: var(--no-diff-del); }
-  .stat-deletions .stat-indicator { background-color: var(--no-diff-del); }
+  .stat-additions {
+    color: var(--no-diff-add);
+  }
 
-  .stat-modified { color: var(--no-diff-mod); }
-  .stat-modified .stat-indicator { background-color: var(--no-diff-mod); }
+  .stat-deletions {
+    color: var(--no-diff-del);
+  }
+
+  .stat-modified {
+    color: var(--no-diff-mod);
+  }
+
+  .summary-text {
+    color: var(--no-fg-secondary);
+    font-weight: 500;
+    font-family: inherit;
+  }
 </style>

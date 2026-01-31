@@ -1,6 +1,7 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog';
   import { readTextFile } from '@tauri-apps/plugin-fs';
+  import { FolderOpen, Save, Loader2, ChevronDown } from 'lucide-svelte';
 
   interface Props {
     filePath: string;
@@ -149,61 +150,128 @@
 </script>
 
 <div class="file-toolbar">
-  <input
-    type="text"
-    bind:value={inputPath}
-    onkeydown={handleKeyDown}
-    placeholder="Enter file path or browse..."
-    class="path-input"
-    {disabled}
-  />
-  <button
-    onclick={handleBrowse}
-    class="toolbar-btn"
-    disabled={disabled || isLoading}
-    title="Browse for file"
-  >
-    {isLoading ? '...' : 'Browse'}
-  </button>
-  <select
-    bind:value={language}
-    class="language-select"
-    {disabled}
-    title="Syntax highlighting language"
-  >
-    {#each languages as lang}
-      <option value={lang.id}>{lang.label}</option>
-    {/each}
-  </select>
-  <button
-    onclick={onSave}
-    class="toolbar-btn save-btn"
-    disabled={disabled || !filePath || !hasUnsavedChanges}
-    title={!filePath ? 'No file loaded' : !hasUnsavedChanges ? 'No changes to save' : 'Save file (Ctrl+S)'}
-  >
-    Save
-  </button>
+  <span class="side-label">
+    <span class="side-dot" class:side-dot-modified={side === 'modified'}></span>
+    {side === 'original' ? 'Original' : 'Modified'}
+  </span>
+
+  <div class="toolbar-group path-group">
+    <div class="input-wrapper">
+      <input
+        type="text"
+        bind:value={inputPath}
+        onkeydown={handleKeyDown}
+        placeholder="Enter file path or browse..."
+        class="path-input"
+        {disabled}
+      />
+      {#if hasUnsavedChanges}
+        <span class="unsaved-dot"></span>
+      {/if}
+    </div>
+
+    <button
+      onclick={handleBrowse}
+      class="toolbar-btn icon-btn"
+      disabled={disabled || isLoading}
+      title="Browse for file"
+    >
+      {#if isLoading}
+        <Loader2 size={14} class="spinning" />
+      {:else}
+        <FolderOpen size={14} />
+      {/if}
+    </button>
+  </div>
+
+  <div class="toolbar-group">
+    <div class="select-wrapper">
+      <select
+        bind:value={language}
+        class="language-select"
+        {disabled}
+        title="Syntax highlighting language"
+      >
+        {#each languages as lang}
+          <option value={lang.id}>{lang.label}</option>
+        {/each}
+      </select>
+      <span class="select-icon"><ChevronDown size={12} /></span>
+    </div>
+
+    <button
+      onclick={onSave}
+      class="toolbar-btn icon-btn save-btn"
+      disabled={disabled || !filePath || !hasUnsavedChanges}
+      title={!filePath ? 'No file loaded' : !hasUnsavedChanges ? 'No changes to save' : 'Save file (Ctrl+S)'}
+    >
+      <Save size={14} />
+    </button>
+  </div>
 </div>
 
 <style>
   .file-toolbar {
     display: flex;
-    gap: 0.5rem;
-    padding: 0.5rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.375rem 0.5rem;
     background-color: var(--no-bg-secondary);
-    border-bottom: 1px solid var(--no-border);
+    border-bottom: 1px solid var(--no-border-subtle);
+  }
+
+  .side-label {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--no-fg-muted);
+    flex-shrink: 0;
+    min-width: 5rem;
+  }
+
+  .side-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--no-fg-muted);
+    opacity: 0.6;
+  }
+
+  .side-dot-modified {
+    background-color: var(--no-accent-blue);
+    opacity: 1;
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .path-group {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .input-wrapper {
+    flex: 1;
+    min-width: 0;
+    position: relative;
   }
 
   .path-input {
-    flex: 1;
-    min-width: 0;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8125rem;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, 'Cascadia Code', monospace;
+    width: 100%;
+    padding: 0.3125rem 0.5rem;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
     color: var(--no-fg-primary);
     background-color: var(--no-bg-primary);
-    border: 1px solid var(--no-border);
-    border-radius: 0.375rem;
+    border: 1px solid var(--no-border-subtle);
+    border-radius: 3px;
     outline: none;
   }
 
@@ -213,7 +281,7 @@
 
   .path-input:focus {
     border-color: var(--no-accent-blue);
-    box-shadow: 0 0 0 2px var(--no-focus-ring);
+    box-shadow: 0 0 0 1px var(--no-focus-ring);
   }
 
   .path-input:disabled {
@@ -221,66 +289,106 @@
     cursor: not-allowed;
   }
 
+  .unsaved-dot {
+    position: absolute;
+    right: 0.375rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background-color: var(--no-accent-blue);
+    border-radius: 50%;
+  }
+
   .toolbar-btn {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--no-fg-primary);
-    background-color: var(--no-bg-tertiary);
-    border: 1px solid var(--no-border);
-    border-radius: 0.375rem;
+    padding: 0.3125rem;
+    font-size: 0.75rem;
+    color: var(--no-fg-secondary);
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
     cursor: pointer;
-    transition: all 150ms ease;
-    white-space: nowrap;
+    transition: all 100ms ease;
+  }
+
+  .icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .toolbar-btn:hover:not(:disabled) {
     background-color: var(--no-hover-bg);
-    border-color: var(--no-accent-blue);
+    color: var(--no-fg-primary);
   }
 
   .toolbar-btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--no-bg-primary), 0 0 0 4px var(--no-focus-ring);
+    box-shadow: 0 0 0 2px var(--no-focus-ring);
   }
 
   .toolbar-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   .save-btn:not(:disabled) {
-    background-color: var(--no-accent-blue);
-    color: white;
-    border-color: var(--no-accent-blue);
+    color: var(--no-accent-blue);
   }
 
   .save-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
+    background-color: var(--no-active-bg);
+  }
+
+  .select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
   }
 
   .language-select {
-    padding: 0.375rem 0.5rem;
-    font-size: 0.8125rem;
-    color: var(--no-fg-primary);
-    background-color: var(--no-bg-tertiary);
-    border: 1px solid var(--no-border);
-    border-radius: 0.375rem;
+    padding: 0.3125rem 1.375rem 0.3125rem 0.5rem;
+    font-size: 0.6875rem;
+    color: var(--no-fg-secondary);
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
     cursor: pointer;
     outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .select-icon {
+    position: absolute;
+    right: 0.25rem;
+    pointer-events: none;
+    color: var(--no-fg-muted);
+    display: flex;
+    align-items: center;
   }
 
   .language-select:hover:not(:disabled) {
-    border-color: var(--no-accent-blue);
+    background-color: var(--no-hover-bg);
+    color: var(--no-fg-primary);
   }
 
   .language-select:focus {
-    border-color: var(--no-accent-blue);
+    background-color: var(--no-hover-bg);
     box-shadow: 0 0 0 2px var(--no-focus-ring);
   }
 
   .language-select:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  :global(.spinning) {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 </style>

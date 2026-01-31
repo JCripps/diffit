@@ -146,12 +146,12 @@
 </script>
 
 <div
-  class="flex flex-col h-screen p-4"
+  class="flex flex-col h-screen p-3"
   style="background-color: var(--no-bg-primary);"
 >
   <Header onclear={handleClear} onswap={handleSwap} />
 
-  <main class="flex-1 min-h-0 py-4">
+  <main class="flex-1 min-h-0 py-3">
     <div class="editor-container">
       <div class="toolbars-row">
         <div class="toolbar-pane">
@@ -199,10 +199,10 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    border-radius: 0.5rem;
+    border-radius: 3px;
     overflow: hidden;
     border: 1px solid var(--no-border);
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    background-color: var(--no-bg-elevated);
   }
 
   .toolbars-row {

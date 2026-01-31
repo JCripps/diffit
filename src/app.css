@@ -2,33 +2,42 @@
 
 /* Night Owl Theme Custom Properties */
 :root {
+  /* Typography */
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, 'Cascadia Code', monospace;
+
   /* Light Theme (default) */
   --no-bg-primary: #FBFBFB;
   --no-bg-secondary: #F0F0F0;
   --no-bg-tertiary: #E8E8E8;
+  --no-bg-elevated: #FFFFFF;
 
   --no-fg-primary: #403f53;
   --no-fg-secondary: #5c5b6b;
   --no-fg-muted: #90A7B2;
 
   --no-border: #d9d9d9;
-  --no-border-subtle: #e8e8e8;
+  --no-border-subtle: #eaeaea;
 
   --no-accent-blue: #4876d6;
   --no-accent-purple: #994cc3;
   --no-accent-cyan: #0c969b;
 
-  /* Diff colors - Light */
-  --no-diff-add: #49d0c5;
-  --no-diff-add-bg: #49d0c515;
-  --no-diff-del: #f76e6e;
-  --no-diff-del-bg: #f76e6e15;
-  --no-diff-mod: #c96765;
+  /* Diff colors - Light (GitHub-style muted) */
+  --no-diff-add: #22863a;
+  --no-diff-add-bg: #22863a12;
+  --no-diff-del: #cb2431;
+  --no-diff-del-bg: #cb243112;
+  --no-diff-mod: #b08800;
 
   /* Interactive states */
   --no-hover-bg: #e8e8e8;
   --no-active-bg: #d3e8f8;
   --no-focus-ring: #4876d680;
+
+  /* Shadows */
+  --no-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --no-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --no-shadow-inset: inset 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,6 +46,7 @@
     --no-bg-primary: #011627;
     --no-bg-secondary: #010E17;
     --no-bg-tertiary: #0d293e;
+    --no-bg-elevated: #0a2035;
 
     --no-fg-primary: #d6deeb;
     --no-fg-secondary: #b0bec5;
@@ -50,15 +60,45 @@
     --no-accent-cyan: #7fdbca;
 
     /* Diff colors - Dark */
-    --no-diff-add: #addb67;
-    --no-diff-add-bg: #99b76d20;
-    --no-diff-del: #ef5350;
-    --no-diff-del-bg: #ef535025;
-    --no-diff-mod: #ffcb8b;
+    --no-diff-add: #85e89d;
+    --no-diff-add-bg: #85e89d18;
+    --no-diff-del: #f97583;
+    --no-diff-del-bg: #f9758318;
+    --no-diff-mod: #ffab70;
 
     /* Interactive states */
     --no-hover-bg: #0d293e;
     --no-active-bg: #5f7e9730;
     --no-focus-ring: #82aaff60;
+
+    /* Shadows - slightly more visible for dark mode */
+    --no-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+    --no-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+    --no-shadow-inset: inset 0 1px 2px 0 rgb(0 0 0 / 0.15);
   }
+}
+
+/* Global font smoothing */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--no-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--no-fg-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--no-fg-secondary);
 }
