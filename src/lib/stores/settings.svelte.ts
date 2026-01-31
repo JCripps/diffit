@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-const STORAGE_KEY = 'diff-it-settings';
+const STORAGE_KEY = 'diffit-settings';
 const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 8;
 const MAX_FONT_SIZE = 32;

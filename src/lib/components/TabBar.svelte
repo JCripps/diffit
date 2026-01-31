@@ -39,7 +39,7 @@
   <!-- Logo - compact -->
   <div class="logo">
     <span class="logo-mark">&lt;/&gt;</span>
-    <span class="logo-text"><span class="logo-diff">diff</span><span class="logo-it">-it</span></span>
+    <span class="logo-text"><span class="logo-diff">diff</span><span class="logo-it">it</span></span>
   </div>
 
   <!-- Tabs strip -->

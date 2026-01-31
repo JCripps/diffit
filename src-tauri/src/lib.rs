@@ -56,7 +56,7 @@ pub fn run() {
             let menu = Menu::with_items(
                 app,
                 &[
-                    &SubmenuBuilder::new(app, "diff-it")
+                    &SubmenuBuilder::new(app, "diffit")
                         .about(None)
                         .separator()
                         .services()

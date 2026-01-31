@@ -655,7 +655,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "diff-it"
+name = "diffit"
 version = "0.1.0"
 dependencies = [
  "serde",
