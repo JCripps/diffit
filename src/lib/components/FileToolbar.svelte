@@ -7,6 +7,7 @@
     filePath: string;
     language: string;
     hasUnsavedChanges: boolean;
+    hasContent?: boolean;
     disabled?: boolean;
     onLoad: (content: string, path: string) => void;
     onSave: () => void;
@@ -17,6 +18,7 @@
     filePath = $bindable(''),
     language = $bindable('plaintext'),
     hasUnsavedChanges,
+    hasContent = false,
     disabled = false,
     onLoad,
     onSave,
@@ -156,7 +158,7 @@
   </span>
 
   <div class="toolbar-group path-group">
-    <div class="input-wrapper">
+    <div class="input-wrapper" data-tooltip={inputPath || null}>
       <input
         type="text"
         bind:value={inputPath}
@@ -202,8 +204,8 @@
     <button
       onclick={onSave}
       class="toolbar-btn icon-btn save-btn"
-      disabled={disabled || !filePath || !hasUnsavedChanges}
-      title={!filePath ? 'No file loaded' : !hasUnsavedChanges ? 'No changes to save' : 'Save file (Ctrl+S)'}
+      disabled={disabled || !hasContent || (!!filePath && !hasUnsavedChanges)}
+      title={!hasContent ? 'No content to save' : !filePath ? 'Save as... (Ctrl+S)' : !hasUnsavedChanges ? 'No changes to save' : 'Save file (Ctrl+S)'}
     >
       <Save size={14} />
     </button>
@@ -263,6 +265,25 @@
     position: relative;
   }
 
+  .input-wrapper[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.6875rem;
+    font-family: var(--font-mono);
+    color: var(--no-fg-primary);
+    background-color: var(--no-bg-tertiary, var(--no-bg-secondary));
+    border: 1px solid var(--no-border-subtle);
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
   .path-input {
     width: 100%;
     padding: 0.3125rem 0.5rem;
@@ -273,6 +294,8 @@
     border: 1px solid var(--no-border-subtle);
     border-radius: 3px;
     outline: none;
+    direction: rtl;
+    text-align: left;
   }
 
   .path-input::placeholder {

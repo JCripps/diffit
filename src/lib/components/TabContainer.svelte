@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { confirm } from '@tauri-apps/plugin-dialog';
+  import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import TabBar from './TabBar.svelte';
   import DiffViewer from './DiffViewer.svelte';
   import type { TabState } from '$lib/types/tab';
   import { createEmptyTab, hasUnsavedChanges } from '$lib/types/tab';
+  import { settings } from '$lib/stores/settings.svelte';
 
   // Initialize with one empty tab
   const initialTab = createEmptyTab();
@@ -134,12 +136,30 @@
     }
   }
 
-  onMount(() => {
+  let unlistenZoom: UnlistenFn | undefined;
+
+  onMount(async () => {
     window.addEventListener('keydown', handleKeyDown);
+
+    // Listen for native menu zoom events
+    unlistenZoom = await listen<string>('menu-zoom', (event) => {
+      switch (event.payload) {
+        case 'in':
+          settings.increaseFontSize();
+          break;
+        case 'out':
+          settings.decreaseFontSize();
+          break;
+        case 'reset':
+          settings.resetFontSize();
+          break;
+      }
+    });
   });
 
   onDestroy(() => {
     window.removeEventListener('keydown', handleKeyDown);
+    unlistenZoom?.();
   });
 </script>
 

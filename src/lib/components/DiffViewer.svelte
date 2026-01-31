@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { confirm } from '@tauri-apps/plugin-dialog';
+  import { confirm, save } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import Footer from './Footer.svelte';
   import FileToolbar from './FileToolbar.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
+  import { settings } from '$lib/stores/settings.svelte';
 
   interface Props {
     originalText?: string;
@@ -34,6 +35,10 @@
   // Computed: check for unsaved changes
   let originalHasChanges = $derived(originalFilePath !== '' && originalText !== originalSavedContent);
   let modifiedHasChanges = $derived(modifiedFilePath !== '' && modifiedText !== modifiedSavedContent);
+
+  // Computed: check if panes have content
+  let originalHasContent = $derived(originalText.length > 0);
+  let modifiedHasContent = $derived(modifiedText.length > 0);
 
   let diffEditorComponent: MonacoDiffEditor;
 
@@ -73,18 +78,24 @@
 
   async function saveFile(side: 'original' | 'modified') {
     const content = side === 'original' ? originalText : modifiedText;
-    const path = side === 'original' ? originalFilePath : modifiedFilePath;
+    let path = side === 'original' ? originalFilePath : modifiedFilePath;
 
+    // If no path, prompt user to choose save location
     if (!path) {
-      alert('No file loaded to save.');
-      return;
+      const selectedPath = await save({
+        title: 'Save file as...',
+      });
+      if (!selectedPath) return; // User cancelled
+      path = selectedPath;
     }
 
     try {
       await writeTextFile(path, content);
       if (side === 'original') {
+        originalFilePath = path;
         originalSavedContent = content;
       } else {
+        modifiedFilePath = path;
         modifiedSavedContent = content;
       }
     } catch (err) {
@@ -157,6 +168,7 @@
           bind:filePath={originalFilePath}
           bind:language={originalLanguage}
           hasUnsavedChanges={originalHasChanges}
+          hasContent={originalHasContent}
           onLoad={handleOriginalLoad}
           onSave={handleOriginalSave}
           side="original"
@@ -167,6 +179,7 @@
           bind:filePath={modifiedFilePath}
           bind:language={modifiedLanguage}
           hasUnsavedChanges={modifiedHasChanges}
+          hasContent={modifiedHasContent}
           onLoad={handleModifiedLoad}
           onSave={handleModifiedSave}
           side="modified"
@@ -178,6 +191,7 @@
         bind:this={diffEditorComponent}
         bind:originalText
         bind:modifiedText
+        fontSize={settings.fontSize}
         onStatsChange={handleStatsChange}
         onFocusChange={handleFocusChange}
       />

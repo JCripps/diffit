@@ -6,11 +6,12 @@
   interface Props {
     originalText: string;
     modifiedText: string;
+    fontSize?: number;
     onStatsChange?: (stats: { additions: number; deletions: number; modified: number }) => void;
     onFocusChange?: (side: 'original' | 'modified') => void;
   }
 
-  let { originalText = $bindable(''), modifiedText = $bindable(''), onStatsChange, onFocusChange }: Props = $props();
+  let { originalText = $bindable(''), modifiedText = $bindable(''), fontSize = 14, onStatsChange, onFocusChange }: Props = $props();
 
   let containerEl: HTMLDivElement;
   let diffEditor: Monaco.editor.IStandaloneDiffEditor | null = null;
@@ -95,7 +96,7 @@
       renderMarginRevertIcon: false,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
-      fontSize: 14,
+      fontSize,
       lineNumbers: 'on',
       wordWrap: 'off',
     });
@@ -164,6 +165,13 @@
       isUpdatingModels = true;
       modifiedModel.setValue(modifiedText);
       isUpdatingModels = false;
+    }
+  });
+
+  // Update font size when prop changes
+  $effect(() => {
+    if (diffEditor) {
+      diffEditor.updateOptions({ fontSize });
     }
   });
 
