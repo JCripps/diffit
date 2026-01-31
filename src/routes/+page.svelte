@@ -1,5 +1,5 @@
 <script lang="ts">
-  import DiffViewer from '$lib/components/DiffViewer.svelte';
+  import TabContainer from '$lib/components/TabContainer.svelte';
 </script>
 
-<DiffViewer />
+<TabContainer />

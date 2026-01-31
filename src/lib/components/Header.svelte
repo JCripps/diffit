@@ -1,12 +1,13 @@
 <script lang="ts">
-  import { Eraser, ArrowLeftRight } from 'lucide-svelte';
+  import { Eraser, ArrowLeftRight, Plus } from 'lucide-svelte';
 
   interface Props {
     onclear: () => void;
     onswap: () => void;
+    onNewTab?: () => void;
   }
 
-  let { onclear, onswap }: Props = $props();
+  let { onclear, onswap, onNewTab }: Props = $props();
 </script>
 
 <header
@@ -19,6 +20,12 @@
     <span class="logo-text"><span class="logo-diff">diff</span><span class="logo-it">-it</span></span>
   </div>
   <div class="flex gap-1.5">
+    {#if onNewTab}
+      <button onclick={onNewTab} class="header-btn" title="New tab (Cmd+T)">
+        <Plus size={14} />
+        <span>New Tab</span>
+      </button>
+    {/if}
     <button onclick={onclear} class="header-btn">
       <Eraser size={14} />
       <span>Clear</span>

@@ -1,23 +1,34 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
   import { confirm } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
-  import Header from './Header.svelte';
   import Footer from './Footer.svelte';
   import FileToolbar from './FileToolbar.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
 
-  let originalText = $state('');
-  let modifiedText = $state('');
-  let stats = $state({ additions: 0, deletions: 0, modified: 0 });
+  interface Props {
+    originalText?: string;
+    modifiedText?: string;
+    originalFilePath?: string;
+    modifiedFilePath?: string;
+    originalSavedContent?: string;
+    modifiedSavedContent?: string;
+    originalLanguage?: string;
+    modifiedLanguage?: string;
+    stats?: { additions: number; deletions: number; modified: number };
+  }
 
-  // File state
-  let originalFilePath = $state('');
-  let modifiedFilePath = $state('');
-  let originalSavedContent = $state('');
-  let modifiedSavedContent = $state('');
-  let originalLanguage = $state('plaintext');
-  let modifiedLanguage = $state('plaintext');
+  let {
+    originalText = $bindable(''),
+    modifiedText = $bindable(''),
+    originalFilePath = $bindable(''),
+    modifiedFilePath = $bindable(''),
+    originalSavedContent = $bindable(''),
+    modifiedSavedContent = $bindable(''),
+    originalLanguage = $bindable('plaintext'),
+    modifiedLanguage = $bindable('plaintext'),
+    stats = $bindable({ additions: 0, deletions: 0, modified: 0 }),
+  }: Props = $props();
+
   let focusedPane = $state<'original' | 'modified'>('original');
 
   // Computed: check for unsaved changes
@@ -32,32 +43,6 @@
 
   function handleFocusChange(side: 'original' | 'modified') {
     focusedPane = side;
-  }
-
-  function handleClear() {
-    diffEditorComponent?.clear();
-    originalFilePath = '';
-    modifiedFilePath = '';
-    originalSavedContent = '';
-    modifiedSavedContent = '';
-    originalLanguage = 'plaintext';
-    modifiedLanguage = 'plaintext';
-  }
-
-  function handleSwap() {
-    diffEditorComponent?.swap();
-    // Swap file paths and saved content
-    const tempPath = originalFilePath;
-    const tempSaved = originalSavedContent;
-    const tempLang = originalLanguage;
-
-    originalFilePath = modifiedFilePath;
-    originalSavedContent = modifiedSavedContent;
-    originalLanguage = modifiedLanguage;
-
-    modifiedFilePath = tempPath;
-    modifiedSavedContent = tempSaved;
-    modifiedLanguage = tempLang;
   }
 
   async function handleOriginalLoad(content: string, path: string) {
@@ -116,13 +101,6 @@
     saveFile('modified');
   }
 
-  function handleKeyDown(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      saveFile(focusedPane);
-    }
-  }
-
   // Update language when changed in toolbar
   $effect(() => {
     if (diffEditorComponent) {
@@ -136,56 +114,75 @@
     }
   });
 
-  onMount(() => {
-    window.addEventListener('keydown', handleKeyDown);
-  });
+  // Expose methods for parent component
+  export function saveFocusedPane() {
+    saveFile(focusedPane);
+  }
 
-  onDestroy(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-  });
+  export function getFocusedPane() {
+    return focusedPane;
+  }
+
+  export function clear() {
+    diffEditorComponent?.clear();
+    originalFilePath = '';
+    modifiedFilePath = '';
+    originalSavedContent = '';
+    modifiedSavedContent = '';
+    originalLanguage = 'plaintext';
+    modifiedLanguage = 'plaintext';
+  }
+
+  export function swap() {
+    diffEditorComponent?.swap();
+    const tempPath = originalFilePath;
+    const tempSaved = originalSavedContent;
+    const tempLang = originalLanguage;
+
+    originalFilePath = modifiedFilePath;
+    originalSavedContent = modifiedSavedContent;
+    originalLanguage = modifiedLanguage;
+
+    modifiedFilePath = tempPath;
+    modifiedSavedContent = tempSaved;
+    modifiedLanguage = tempLang;
+  }
 </script>
 
-<div
-  class="flex flex-col h-screen p-3"
-  style="background-color: var(--no-bg-primary);"
->
-  <Header onclear={handleClear} onswap={handleSwap} />
-
-  <main class="flex-1 min-h-0 py-3">
-    <div class="editor-container">
-      <div class="toolbars-row">
-        <div class="toolbar-pane">
-          <FileToolbar
-            bind:filePath={originalFilePath}
-            bind:language={originalLanguage}
-            hasUnsavedChanges={originalHasChanges}
-            onLoad={handleOriginalLoad}
-            onSave={handleOriginalSave}
-            side="original"
-          />
-        </div>
-        <div class="toolbar-pane">
-          <FileToolbar
-            bind:filePath={modifiedFilePath}
-            bind:language={modifiedLanguage}
-            hasUnsavedChanges={modifiedHasChanges}
-            onLoad={handleModifiedLoad}
-            onSave={handleModifiedSave}
-            side="modified"
-          />
-        </div>
+<div class="diff-viewer">
+  <div class="editor-container">
+    <div class="toolbars-row">
+      <div class="toolbar-pane">
+        <FileToolbar
+          bind:filePath={originalFilePath}
+          bind:language={originalLanguage}
+          hasUnsavedChanges={originalHasChanges}
+          onLoad={handleOriginalLoad}
+          onSave={handleOriginalSave}
+          side="original"
+        />
       </div>
-      <div class="editor-area">
-        <MonacoDiffEditor
-          bind:this={diffEditorComponent}
-          bind:originalText
-          bind:modifiedText
-          onStatsChange={handleStatsChange}
-          onFocusChange={handleFocusChange}
+      <div class="toolbar-pane">
+        <FileToolbar
+          bind:filePath={modifiedFilePath}
+          bind:language={modifiedLanguage}
+          hasUnsavedChanges={modifiedHasChanges}
+          onLoad={handleModifiedLoad}
+          onSave={handleModifiedSave}
+          side="modified"
         />
       </div>
     </div>
-  </main>
+    <div class="editor-area">
+      <MonacoDiffEditor
+        bind:this={diffEditorComponent}
+        bind:originalText
+        bind:modifiedText
+        onStatsChange={handleStatsChange}
+        onFocusChange={handleFocusChange}
+      />
+    </div>
+  </div>
 
   <Footer
     additions={stats.additions}
@@ -195,11 +192,19 @@
 </div>
 
 <style>
-  .editor-container {
-    height: 100%;
+  .diff-viewer {
     display: flex;
     flex-direction: column;
-    border-radius: 3px;
+    height: 100%;
+    background-color: var(--no-bg-primary);
+  }
+
+  .editor-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
     overflow: hidden;
     border: 1px solid var(--no-border);
     background-color: var(--no-bg-elevated);
