@@ -1,67 +1,57 @@
 <script lang="ts">
-  import { computeDiff } from '$lib/utils/diff';
-  import type { DiffResult } from '$lib/types/diff';
   import Header from './Header.svelte';
   import Footer from './Footer.svelte';
-  import EditorPanel from './EditorPanel.svelte';
+  import MonacoDiffEditor from './MonacoDiffEditor.svelte';
 
-  let leftText = $state('');
-  let rightText = $state('');
+  let originalText = $state('');
+  let modifiedText = $state('');
+  let stats = $state({ additions: 0, deletions: 0, modified: 0 });
 
-  // Debounced values for diff calculation
-  let debouncedLeft = $state('');
-  let debouncedRight = $state('');
+  let diffEditorComponent: MonacoDiffEditor;
 
-  // Debounce the text values
-  $effect(() => {
-    const left = leftText;
-    const right = rightText;
-    const timeout = setTimeout(() => {
-      debouncedLeft = left;
-      debouncedRight = right;
-    }, 200);
-    return () => clearTimeout(timeout);
-  });
-
-  // Compute diff from debounced values
-  let diffResult: DiffResult = $derived(computeDiff(debouncedLeft, debouncedRight));
+  function handleStatsChange(newStats: { additions: number; deletions: number; modified: number }) {
+    stats = newStats;
+  }
 
   function handleClear() {
-    leftText = '';
-    rightText = '';
-    debouncedLeft = '';
-    debouncedRight = '';
+    diffEditorComponent?.clear();
   }
 
   function handleSwap() {
-    const temp = leftText;
-    leftText = rightText;
-    rightText = temp;
+    diffEditorComponent?.swap();
   }
 </script>
 
-<div class="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 p-4">
+<div
+  class="flex flex-col h-screen p-4"
+  style="background-color: var(--no-bg-primary);"
+>
   <Header onclear={handleClear} onswap={handleSwap} />
 
-  <main class="flex-1 grid grid-cols-2 gap-4 min-h-0 py-4">
-    <EditorPanel
-      bind:value={leftText}
-      lines={diffResult.leftLines}
-      side="left"
-      label="Original"
-    />
-    <EditorPanel
-      bind:value={rightText}
-      lines={diffResult.rightLines}
-      side="right"
-      label="Modified"
-    />
+  <main class="flex-1 min-h-0 py-4">
+    <div class="editor-container">
+      <MonacoDiffEditor
+        bind:this={diffEditorComponent}
+        bind:originalText
+        bind:modifiedText
+        onStatsChange={handleStatsChange}
+      />
+    </div>
   </main>
 
   <Footer
-    additions={diffResult.stats.additions}
-    deletions={diffResult.stats.deletions}
-    modified={diffResult.stats.modified}
-    hitTimeout={diffResult.hitTimeout}
+    additions={stats.additions}
+    deletions={stats.deletions}
+    modified={stats.modified}
   />
 </div>
+
+<style>
+  .editor-container {
+    height: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--no-border);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+</style>

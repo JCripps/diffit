@@ -3,21 +3,55 @@
     additions: number;
     deletions: number;
     modified?: number;
-    hitTimeout?: boolean;
   }
 
-  let { additions, deletions, modified = 0, hitTimeout = false }: Props = $props();
+  let { additions, deletions, modified = 0 }: Props = $props();
 </script>
 
-<footer class="flex gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm">
-  <span class="text-green-600 dark:text-green-400">+{additions} addition{additions !== 1 ? 's' : ''}</span>
-  <span class="text-red-600 dark:text-red-400">-{deletions} deletion{deletions !== 1 ? 's' : ''}</span>
+<footer
+  class="flex items-center gap-4 pt-4 border-t text-sm font-medium"
+  style="border-color: var(--no-border);"
+>
+  <div class="stat-item stat-additions">
+    <span class="stat-indicator"></span>
+    <span>+{additions} addition{additions !== 1 ? 's' : ''}</span>
+  </div>
+
+  <div class="stat-item stat-deletions">
+    <span class="stat-indicator"></span>
+    <span>-{deletions} deletion{deletions !== 1 ? 's' : ''}</span>
+  </div>
+
   {#if modified > 0}
-    <span class="text-yellow-600 dark:text-yellow-400">~{modified} modified</span>
-  {/if}
-  {#if hitTimeout}
-    <span class="text-orange-500 dark:text-orange-400 ml-auto" title="Diff computation timed out. Results may be incomplete.">
-      ⚠ Timeout
-    </span>
+    <div class="stat-item stat-modified">
+      <span class="stat-indicator"></span>
+      <span>~{modified} modified</span>
+    </div>
   {/if}
 </footer>
+
+<style>
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    background-color: var(--no-bg-secondary);
+  }
+
+  .stat-indicator {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+  }
+
+  .stat-additions { color: var(--no-diff-add); }
+  .stat-additions .stat-indicator { background-color: var(--no-diff-add); }
+
+  .stat-deletions { color: var(--no-diff-del); }
+  .stat-deletions .stat-indicator { background-color: var(--no-diff-del); }
+
+  .stat-modified { color: var(--no-diff-mod); }
+  .stat-modified .stat-indicator { background-color: var(--no-diff-mod); }
+</style>
