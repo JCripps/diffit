@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { LineDiff, ChangeType } from '$lib/types/diff';
+  import DiffLine from './DiffLine.svelte';
 
   interface Props {
     value: string;
@@ -17,26 +18,37 @@
   // Line count from actual value (for gutter)
   let valueLines = $derived(value ? value.split('\n') : ['']);
 
-  // Build a map of line number to change type from diff result
-  let lineChangeTypes = $derived.by(() => {
-    const map = new Map<number, ChangeType>();
+  // Build a map of line number to diff info
+  let lineDiffMap = $derived.by(() => {
+    const map = new Map<number, LineDiff>();
     for (const line of lines) {
       if (line.lineNumber !== null) {
-        map.set(line.lineNumber, line.changeType);
+        map.set(line.lineNumber, line);
       }
     }
     return map;
   });
 
   function getLineBackgroundClass(lineNum: number): string {
-    const changeType = lineChangeTypes.get(lineNum);
-    if (changeType === 'added' && side === 'right') {
+    const diffInfo = lineDiffMap.get(lineNum);
+    if (!diffInfo) return '';
+
+    if (diffInfo.changeType === 'added' && side === 'right') {
       return 'bg-green-100 dark:bg-green-900/30';
     }
-    if (changeType === 'removed' && side === 'left') {
+    if (diffInfo.changeType === 'removed' && side === 'left') {
       return 'bg-red-100 dark:bg-red-900/30';
     }
+    if (diffInfo.changeType === 'modified') {
+      return side === 'left'
+        ? 'bg-red-100 dark:bg-red-900/30'
+        : 'bg-green-100 dark:bg-green-900/30';
+    }
     return '';
+  }
+
+  function getLineDiff(lineNum: number): LineDiff | undefined {
+    return lineDiffMap.get(lineNum);
   }
 
   function handleScroll() {
@@ -69,8 +81,14 @@
         bind:this={highlightRef}
         class="absolute inset-0 overflow-hidden pointer-events-none"
       >
-        {#each valueLines as _, i (i)}
-          <div class="h-6 {getLineBackgroundClass(i + 1)}"></div>
+        {#each valueLines as lineContent, i (i)}
+          {@const lineNum = i + 1}
+          {@const diffInfo = getLineDiff(lineNum)}
+          <div class="h-6 px-2 font-mono text-sm leading-6 {getLineBackgroundClass(lineNum)}">
+            {#if diffInfo?.charChanges && diffInfo.charChanges.length > 0}
+              <DiffLine content={lineContent} charChanges={diffInfo.charChanges} {side} />
+            {/if}
+          </div>
         {/each}
       </div>
 

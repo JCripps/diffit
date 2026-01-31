@@ -1,49 +1,182 @@
-import { diffLines } from 'diff';
-import type { DiffResult, LineDiff } from '$lib/types/diff';
+import { computeDiff as vscodeComputeDiff } from '$lib/diff/algorithm';
+import type { DiffResult, LineDiff, CharChange } from '$lib/types/diff';
 
 export function computeDiff(leftText: string, rightText: string): DiffResult {
-  const changes = diffLines(leftText, rightText);
-
   const leftLines: LineDiff[] = [];
   const rightLines: LineDiff[] = [];
-  let leftLineNum = 1;
-  let rightLineNum = 1;
   let additions = 0;
   let deletions = 0;
+  let modified = 0;
 
-  for (const change of changes) {
-    const lines = change.value.split('\n');
-    // Remove trailing empty string from split if the value ends with newline
-    if (lines[lines.length - 1] === '') {
-      lines.pop();
+  // Handle empty inputs
+  if (!leftText && !rightText) {
+    return {
+      leftLines: [{ content: '', lineNumber: 1, changeType: 'unchanged' }],
+      rightLines: [{ content: '', lineNumber: 1, changeType: 'unchanged' }],
+      stats: { additions: 0, deletions: 0, modified: 0 },
+      hitTimeout: false,
+    };
+  }
+
+  const originalLines = leftText.split(/\r\n|\r|\n/);
+  const modifiedLines = rightText.split(/\r\n|\r|\n/);
+
+  // Compute diff using VS Code algorithm
+  const diffResult = vscodeComputeDiff(leftText, rightText, {
+    ignoreTrimWhitespace: false,
+    maxComputationTimeMs: 1000,
+    computeMoves: false,
+    extendToSubwords: true,
+  });
+
+  // Build a map of line numbers to their changes
+  const leftLineChanges = new Map<number, { type: 'removed' | 'modified'; charChanges?: CharChange[] }>();
+  const rightLineChanges = new Map<number, { type: 'added' | 'modified'; charChanges?: CharChange[] }>();
+
+  for (const change of diffResult.changes) {
+    const isModification = !change.original.isEmpty && !change.modified.isEmpty;
+
+    // Process original (left) lines
+    for (let lineNum = change.original.startLineNumber; lineNum < change.original.endLineNumberExclusive; lineNum++) {
+      if (isModification) {
+        const charChanges: CharChange[] = [];
+        // Extract character-level changes for this line
+        if (change.innerChanges) {
+          for (const inner of change.innerChanges) {
+            if (inner.originalRange.startLineNumber <= lineNum && inner.originalRange.endLineNumber >= lineNum) {
+              // Calculate the character range for this line
+              const startCol = inner.originalRange.startLineNumber === lineNum
+                ? inner.originalRange.startColumn - 1
+                : 0;
+              const endCol = inner.originalRange.endLineNumber === lineNum
+                ? inner.originalRange.endColumn - 1
+                : originalLines[lineNum - 1].length;
+
+              if (startCol < endCol) {
+                charChanges.push({
+                  start: startCol,
+                  end: endCol,
+                  type: 'removed',
+                });
+              }
+            }
+          }
+        }
+        leftLineChanges.set(lineNum, { type: 'modified', charChanges: charChanges.length > 0 ? charChanges : undefined });
+      } else {
+        leftLineChanges.set(lineNum, { type: 'removed' });
+      }
     }
 
-    if (change.added) {
-      // Added lines only appear on the right
-      for (const line of lines) {
-        leftLines.push({ content: '', lineNumber: null, changeType: 'added' });
-        rightLines.push({ content: line, lineNumber: rightLineNum++, changeType: 'added' });
-        additions++;
+    // Process modified (right) lines
+    for (let lineNum = change.modified.startLineNumber; lineNum < change.modified.endLineNumberExclusive; lineNum++) {
+      if (isModification) {
+        const charChanges: CharChange[] = [];
+        // Extract character-level changes for this line
+        if (change.innerChanges) {
+          for (const inner of change.innerChanges) {
+            if (inner.modifiedRange.startLineNumber <= lineNum && inner.modifiedRange.endLineNumber >= lineNum) {
+              const startCol = inner.modifiedRange.startLineNumber === lineNum
+                ? inner.modifiedRange.startColumn - 1
+                : 0;
+              const endCol = inner.modifiedRange.endLineNumber === lineNum
+                ? inner.modifiedRange.endColumn - 1
+                : modifiedLines[lineNum - 1].length;
+
+              if (startCol < endCol) {
+                charChanges.push({
+                  start: startCol,
+                  end: endCol,
+                  type: 'added',
+                });
+              }
+            }
+          }
+        }
+        rightLineChanges.set(lineNum, { type: 'modified', charChanges: charChanges.length > 0 ? charChanges : undefined });
+      } else {
+        rightLineChanges.set(lineNum, { type: 'added' });
       }
-    } else if (change.removed) {
-      // Removed lines only appear on the left
-      for (const line of lines) {
-        leftLines.push({ content: line, lineNumber: leftLineNum++, changeType: 'removed' });
-        rightLines.push({ content: '', lineNumber: null, changeType: 'removed' });
-        deletions++;
-      }
+    }
+  }
+
+  // Build output arrays with proper alignment
+  let leftIdx = 0;
+  let rightIdx = 0;
+
+  while (leftIdx < originalLines.length || rightIdx < modifiedLines.length) {
+    const leftLineNum = leftIdx + 1;
+    const rightLineNum = rightIdx + 1;
+
+    const leftChange = leftLineChanges.get(leftLineNum);
+    const rightChange = rightLineChanges.get(rightLineNum);
+
+    if (leftChange?.type === 'removed' && !rightChange) {
+      // Pure deletion
+      leftLines.push({
+        content: originalLines[leftIdx],
+        lineNumber: leftLineNum,
+        changeType: 'removed',
+      });
+      rightLines.push({
+        content: '',
+        lineNumber: null,
+        changeType: 'removed',
+      });
+      deletions++;
+      leftIdx++;
+    } else if (!leftChange && rightChange?.type === 'added') {
+      // Pure addition
+      leftLines.push({
+        content: '',
+        lineNumber: null,
+        changeType: 'added',
+      });
+      rightLines.push({
+        content: modifiedLines[rightIdx],
+        lineNumber: rightLineNum,
+        changeType: 'added',
+      });
+      additions++;
+      rightIdx++;
+    } else if (leftChange?.type === 'modified' || rightChange?.type === 'modified') {
+      // Modified line
+      leftLines.push({
+        content: leftIdx < originalLines.length ? originalLines[leftIdx] : '',
+        lineNumber: leftIdx < originalLines.length ? leftLineNum : null,
+        changeType: 'modified',
+        charChanges: leftChange?.charChanges,
+      });
+      rightLines.push({
+        content: rightIdx < modifiedLines.length ? modifiedLines[rightIdx] : '',
+        lineNumber: rightIdx < modifiedLines.length ? rightLineNum : null,
+        changeType: 'modified',
+        charChanges: rightChange?.charChanges,
+      });
+      modified++;
+      leftIdx++;
+      rightIdx++;
     } else {
-      // Unchanged lines appear on both sides
-      for (const line of lines) {
-        leftLines.push({ content: line, lineNumber: leftLineNum++, changeType: 'unchanged' });
-        rightLines.push({ content: line, lineNumber: rightLineNum++, changeType: 'unchanged' });
-      }
+      // Unchanged line
+      leftLines.push({
+        content: leftIdx < originalLines.length ? originalLines[leftIdx] : '',
+        lineNumber: leftIdx < originalLines.length ? leftLineNum : null,
+        changeType: 'unchanged',
+      });
+      rightLines.push({
+        content: rightIdx < modifiedLines.length ? modifiedLines[rightIdx] : '',
+        lineNumber: rightIdx < modifiedLines.length ? rightLineNum : null,
+        changeType: 'unchanged',
+      });
+      leftIdx++;
+      rightIdx++;
     }
   }
 
   return {
     leftLines,
     rightLines,
-    stats: { additions, deletions }
+    stats: { additions, deletions, modified },
+    hitTimeout: diffResult.hitTimeout,
   };
 }

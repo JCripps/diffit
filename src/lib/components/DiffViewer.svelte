@@ -58,5 +58,10 @@
     />
   </main>
 
-  <Footer additions={diffResult.stats.additions} deletions={diffResult.stats.deletions} />
+  <Footer
+    additions={diffResult.stats.additions}
+    deletions={diffResult.stats.deletions}
+    modified={diffResult.stats.modified}
+    hitTimeout={diffResult.hitTimeout}
+  />
 </div>
