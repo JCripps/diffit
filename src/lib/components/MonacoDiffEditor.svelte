@@ -7,9 +7,10 @@
     originalText: string;
     modifiedText: string;
     onStatsChange?: (stats: { additions: number; deletions: number; modified: number }) => void;
+    onFocusChange?: (side: 'original' | 'modified') => void;
   }
 
-  let { originalText = $bindable(''), modifiedText = $bindable(''), onStatsChange }: Props = $props();
+  let { originalText = $bindable(''), modifiedText = $bindable(''), onStatsChange, onFocusChange }: Props = $props();
 
   let containerEl: HTMLDivElement;
   let diffEditor: Monaco.editor.IStandaloneDiffEditor | null = null;
@@ -133,6 +134,20 @@
       monaco.editor.setTheme(e.matches ? 'night-owl-dark' : 'night-owl-light');
     };
     mediaQuery.addEventListener('change', handleThemeChange);
+
+    // Listen for focus changes on both editors
+    if (onFocusChange) {
+      const originalEditor = diffEditor.getOriginalEditor();
+      const modifiedEditor = diffEditor.getModifiedEditor();
+
+      originalEditor.onDidFocusEditorWidget(() => {
+        onFocusChange('original');
+      });
+
+      modifiedEditor.onDidFocusEditorWidget(() => {
+        onFocusChange('modified');
+      });
+    }
   });
 
   // Sync external changes to models
@@ -177,6 +192,13 @@
     const temp = originalText;
     originalText = modifiedText;
     modifiedText = temp;
+  }
+
+  export function setLanguage(side: 'original' | 'modified', languageId: string) {
+    const model = side === 'original' ? originalModel : modifiedModel;
+    if (model) {
+      monaco.editor.setModelLanguage(model, languageId);
+    }
   }
 </script>
 
