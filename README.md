@@ -1,7 +1,6 @@
-# Tauri + SvelteKit + TypeScript
+# diffit
 
-This template should help get you started developing with Tauri, SvelteKit and TypeScript in Vite.
+A tool to compare text - insipired by Beyond Compare & VS Code's diff function. Allows you to compare blocks of text of files, using the Monaco editor's diff function. 
 
-## Recommended IDE Setup
+Built Tauri, Sveltekit, Typescript, and Tailwind.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
